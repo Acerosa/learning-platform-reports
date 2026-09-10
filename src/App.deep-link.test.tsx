@@ -87,4 +87,30 @@ describe("deep-link report lock", () => {
       await screen.findByText(/includes learner identity details/i)
     ).toBeInTheDocument();
   });
+
+  it("unlocks the Session 1 report when all 27 authoritative activities are complete", async () => {
+    window.history.replaceState(
+      null,
+      "",
+      "/?hub=unit-3-cyber-security&week=1&session=1"
+    );
+    const rows = Array.from({ length: 27 }, (_, index) =>
+      row({
+        activity_key: `u3-w01-s1-${index}`,
+        week_number: 1,
+        session_number: 1,
+        completed: true
+      })
+    );
+
+    render(
+      <AuthProvider clientFactory={() => createClient(rows)}>
+        <App />
+      </AuthProvider>
+    );
+
+    expect(await screen.findByRole("heading", { name: /Session 1 report/i })).toBeInTheDocument();
+    expect(screen.getByText(/27 of 27 activities/i)).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /not ready yet/i })).toBeNull();
+  });
 });

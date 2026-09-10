@@ -95,7 +95,79 @@ describe("groupActivitiesBySession", () => {
     expect(unscoped.map((item) => item.activity_key)).toEqual(["missing"]);
   });
 
-  it("keeps 39/40-style sessions locked until every row is complete", () => {
+  it("unlocks Unit 3 Week 1 Session 1 at the authoritative 27/27 membership", () => {
+    const rows = Array.from({ length: 27 }, (_, index) =>
+      row({
+        activity_key: `u3-w01-s1-${index}`,
+        week_number: 1,
+        session_number: 1,
+        completed: true,
+        attempt_count: 1
+      })
+    );
+    const session = groupActivitiesBySession(rows, "unit-3-cyber-security").sessions[0];
+    expect(session.requiredCount).toBe(27);
+    expect(session.completedCount).toBe(27);
+    expect(session.remainingCount).toBe(0);
+    expect(session.reportReady).toBe(true);
+  });
+
+  it("keeps Unit 3 Week 1 Session 1 locked when fewer than 27 assigned activities are complete", () => {
+    const rows = Array.from({ length: 27 }, (_, index) =>
+      row({
+        activity_key: `u3-w01-s1-${index}`,
+        week_number: 1,
+        session_number: 1,
+        completed: index < 26,
+        attempt_count: index < 26 ? 1 : 0
+      })
+    );
+    const session = groupActivitiesBySession(rows, "unit-3-cyber-security").sessions[0];
+    expect(session.requiredCount).toBe(27);
+    expect(session.completedCount).toBe(26);
+    expect(session.remainingCount).toBe(1);
+    expect(session.reportReady).toBe(false);
+  });
+
+  it("unlocks Unit 3 Week 1 Session 2 at the authoritative 28/28 membership", () => {
+    const rows = Array.from({ length: 28 }, (_, index) =>
+      row({
+        activity_key: `u3-w01-s2-${index}`,
+        week_number: 1,
+        session_number: 2,
+        completed: true,
+        attempt_count: 1
+      })
+    );
+    const session = groupActivitiesBySession(rows, "unit-3-cyber-security").sessions[0];
+    expect(session.requiredCount).toBe(28);
+    expect(session.completedCount).toBe(28);
+    expect(session.reportReady).toBe(true);
+  });
+
+  it("does not inflate required count when API rows are already one version per key", () => {
+    const rows = [
+      row({
+        activity_key: "u3-w01-baseline",
+        activity_version: "1.3.0",
+        week_number: 1,
+        session_number: 1,
+        completed: true
+      }),
+      row({
+        activity_key: "u3-w01-cia",
+        activity_version: "1.3.0",
+        week_number: 1,
+        session_number: 1,
+        completed: true
+      })
+    ];
+    const session = groupActivitiesBySession(rows, "unit-3-cyber-security").sessions[0];
+    expect(session.requiredCount).toBe(2);
+    expect(session.activities.map((item) => item.activity_version)).toEqual(["1.3.0", "1.3.0"]);
+  });
+
+  it("keeps legacy inflated 39-row sessions locked until every returned row is complete", () => {
     const almost = Array.from({ length: 39 }, (_, index) =>
       row({
         activity_key: `s1-${index}`,

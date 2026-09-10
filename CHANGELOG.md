@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Session completion audit updated after Phase 1A.1: Unit 3 Week 1 Session 1 / Session 2 authoritative membership is **27 / 28** (no duplicate versions). Unlock remains `completed === required` on API rows; `u3-w01-definition-gap` is not required.
+- Added explicit 27/27 and 28/28 unlock coverage for post–Phase 1A.1 membership.
+
 ## 0.1.1
 
 - Review fixes: safer deep-link identity rejection on first load, cleaner RPC error mapping, formative wording clarification

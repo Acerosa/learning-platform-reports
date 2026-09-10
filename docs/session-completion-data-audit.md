@@ -1,61 +1,39 @@
-# Session completion data audit (Phase 1B review)
+# Session completion data audit (Phase 1B)
 
-Date: 2026-09-10  
-Scope: Unit 3 Week 1 Session 1 / Session 2 vs Phase 1A rows
+Updated: 2026-09-10 (after Phase 1A.1 production validation)
 
-## Authoritative curriculum expectation
+## Authoritative reporting membership (hosted)
 
-From `unit-3-Cyber-Security-Hub/content/unit-3-cyber-security/package.json`:
+Phase 1A.1 `api.my_hub_activity_progress` returns **one current assignment per
+logical activity key**. Older active versions remain available to version-pinned
+learner APIs but are **not** returned as required reporting rows.
 
-| Session | Activity keys in published package |
-| --- | ---: |
-| Week 1 Session 1 | **28** |
-| Week 1 Session 2 | **28** |
+CYBER-TEST-A / Unit 3 Week 1 (hosted, post–Phase 1A.1):
 
-## What Phase 1A currently returns (CYBER-TEST-A learner)
-
-| Session | Phase 1A rows | Distinct activity keys |
+| Session | Current reporting rows | Distinct activity keys |
 | --- | ---: | ---: |
-| Week 1 Session 1 | **39** | **27** |
-| Week 1 Session 2 | **40** | **28** |
+| Week 1 Session 1 | **27** | **27** |
+| Week 1 Session 2 | **28** | **28** |
 
-## Why 39 / 40 is not the lesson boundary
+Example: `u3-w01-baseline` returns a single row at the authoritative current
+version (`1.3.0`). Historical assignment rows for `1.0.0`–`1.2.0` remain stored
+but do not inflate required counts.
 
-Multiple **active required assignments** exist for the same activity key at different versions.
+## Package vs assigned membership
 
-Session 1 multi-version keys (4 versions each: `1.0.0`, `1.1.0`, `1.2.0`, `1.3.0`):
+Published Unit 3 package Session 1 still lists **28** keys including
+`u3-w01-definition-gap`. That activity is **not** present in hosted
+`learning.activities` / assignments, so it is **not** required for reporting.
 
-- `u3-w01-baseline`
-- `u3-w01-cia`
-- `u3-w01-glossary`
-- `u3-w01-incidents`
+Reports SPA completion therefore uses **27 / 27** for Session 1 and **28 / 28**
+for Session 2. Completing every assigned Session 1 activity unlocks the Session 1
+report without inventing `u3-w01-definition-gap`.
 
-→ 4 keys × 3 extra versions = **+12** rows → 27 unique keys + 12 = **39**.
+## Historical Phase 1B blocker (resolved)
 
-Session 2 multi-version keys (same pattern):
+Before Phase 1A.1, Phase 1A returned **39 / 40** Week 1 rows because multiple
+active versions of the same key were each treated as required work. That blocked
+reliable session unlock. Phase 1A.1 removed that inflation on the reporting RPC.
 
-- `u3-w01-retrieval`
-- `u3-w01-command-words`
-- `u3-w01-ocr-practice`
-- `u3-w01-peer-improvement`
-
-→ 28 unique keys + 12 = **40**.
-
-Additional gap:
-
-- Package Session 1 includes `u3-w01-definition-gap`
-- Hosted CYBER-TEST-A active assignments do **not** include that key (27 distinct keys)
-
-## Critical product implication
-
-If a learner completes the Unit 3 lesson as authored (one current activity per package key), the Reports SPA will **not** reliably unlock, because Phase 1A still treats older assigned versions as separate incomplete required rows.
-
-This cannot be fixed inside the SPA without inventing non-authoritative filters.
-
-Required follow-up (separate backend/data task):
-
-1. Make assignment delivery expose a single current version per activity key for reporting, **or**
-2. Deactivate stale version assignments for live groups, **and**
-3. Align assignments with the published package session membership (including `u3-w01-definition-gap` if still required)
-
-Until then Phase 1B merge is blocked by session completion data.
+The SPA still completes a session only when `completed_count === required_count`
+for the API rows it receives. It does not client-filter versions.
