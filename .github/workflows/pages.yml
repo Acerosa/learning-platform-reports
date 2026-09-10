@@ -1,0 +1,76 @@
+name: GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+      - feat/phase-1b-session-reports
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages-reports
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out Reports SPA
+        uses: actions/checkout@v7
+        with:
+          path: learning-platform-reports
+
+      - name: Check out Results library
+        uses: actions/checkout@v7
+        with:
+          repository: Acerosa/learning-platform-results
+          path: learning-platform-results
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: |
+            learning-platform-reports/package-lock.json
+            learning-platform-results/package-lock.json
+
+      - name: Build Results library
+        working-directory: learning-platform-results
+        run: |
+          npm ci
+          npm run build
+
+      - name: Install, test and build Reports SPA
+        working-directory: learning-platform-reports
+        run: |
+          npm ci
+          npm run check
+
+      - name: Configure GitHub Pages
+        if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feat/phase-1b-session-reports')
+        uses: actions/configure-pages@v6
+
+      - name: Upload Pages artifact
+        if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feat/phase-1b-session-reports')
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: learning-platform-reports/dist
+
+  deploy:
+    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feat/phase-1b-session-reports')
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
