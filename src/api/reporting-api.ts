@@ -24,12 +24,17 @@ export async function fetchHubActivityProgress(
   });
 
   if (error) {
-    const code = String(error.code || error.message || "RPC_FAILED");
-    if (/28000|AUTH_REQUIRED|JWT|session/i.test(code + " " + (error.message || ""))) {
+    const message = String(error.message || "");
+    const code = String(error.code || message || "RPC_FAILED");
+    const haystack = `${code} ${message}`;
+    if (/28000|AUTH_REQUIRED|JWT|session/i.test(haystack)) {
       throw Object.assign(new Error("AUTH_REQUIRED"), { code: "AUTH_REQUIRED" });
     }
-    throw Object.assign(new Error(error.message || "RPC_FAILED"), {
-      code: code || "RPC_FAILED"
+    if (/HUB_UNKNOWN|INVALID_HUB_CODE|22023/i.test(haystack)) {
+      throw Object.assign(new Error("HUB_UNAVAILABLE"), { code: "HUB_UNAVAILABLE" });
+    }
+    throw Object.assign(new Error("RPC_FAILED"), {
+      code: "RPC_FAILED"
     });
   }
 

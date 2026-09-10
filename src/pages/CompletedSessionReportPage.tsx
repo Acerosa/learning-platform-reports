@@ -74,9 +74,8 @@ export function CompletedSessionReportPage({
           </p>
         )}
         <p className="muted">
-          Interpretation bands reuse the Results library defaults (
-          {REPORT_INTERPRETATION.strengthThreshold}% / {REPORT_INTERPRETATION.weaknessThreshold}%).
-          These are formative guides, not official grade boundaries.
+          These suggestions are based on your activity results and are intended to help you decide
+          what to review next. They are not official grade boundaries.
         </p>
       </section>
 
@@ -92,7 +91,7 @@ export function CompletedSessionReportPage({
             </ul>
           </>
         ) : (
-          <p>No activities reached the strong-performance band in this lesson.</p>
+          <p>No scored activities reached the strong-performance suggestion band in this lesson.</p>
         )}
       </section>
 
@@ -108,11 +107,12 @@ export function CompletedSessionReportPage({
             </ul>
           </>
         ) : (
-          <p>No scored activities fell into the review band for this lesson.</p>
+          <p>No scored activities fell into the review suggestion band for this lesson.</p>
         )}
         <p className="muted">
-          These points are based on activity titles and latest scores, not formal topic or skill
-          judgements.
+          Labels use activity titles and latest scores only. They are not formal topic, skill,
+          OCR or college grading judgements. Suggestion bands follow the Results library defaults (
+          {REPORT_INTERPRETATION.strengthThreshold}% / {REPORT_INTERPRETATION.weaknessThreshold}%).
         </p>
       </section>
 

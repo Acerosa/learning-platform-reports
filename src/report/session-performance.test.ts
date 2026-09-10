@@ -138,6 +138,65 @@ describe("session performance", () => {
     expect(areasToReview).toEqual(["Vulnerability classification"]);
   });
 
+  it("represents score decreases without inventing positive improvement", () => {
+    const line = buildActivityLine(
+      row({
+        activity_key: "drop",
+        attempt_count: 2,
+        first_percentage: 80,
+        latest_percentage: 55,
+        best_percentage: 80,
+        improvement_percentage_points: -25
+      })
+    );
+    expect(line.showImprovement).toBe(true);
+    expect(line.improvementPercentagePoints).toBe(-25);
+    expect(line.bestPercentage).toBe(80);
+    expect(line.latestPercentage).toBe(55);
+  });
+
+  it("does not treat non-scored completed work as 0% performance", () => {
+    const { strengths, areasToReview } = classifyActivityPerformance([
+      row({
+        activity_key: "reflection",
+        activity_title: "Reflection",
+        max_score: 0,
+        latest_percentage: null,
+        completed: true
+      }),
+      row({
+        activity_key: "quiz",
+        activity_title: "Quiz",
+        latest_percentage: 90,
+        max_score: 10
+      })
+    ]);
+    expect(strengths).toEqual(["Quiz"]);
+    expect(areasToReview).toEqual([]);
+    expect(
+      calculateOverallLatestPercentage([
+        row({
+          activity_key: "reflection",
+          max_score: 0,
+          latest_percentage: null,
+          completed: true
+        }),
+        row({ activity_key: "a", latest_percentage: 80, max_score: 10 }),
+        row({ activity_key: "b", latest_percentage: 60, max_score: 10 })
+      ])
+    ).toBe(70);
+  });
+
+  it("allows low-scoring complete sessions to unlock a report", () => {
+    const ready = session([
+      row({ activity_key: "a", latest_percentage: 20, latest_score: 2, completed: true }),
+      row({ activity_key: "b", latest_percentage: 10, latest_score: 1, completed: true })
+    ]);
+    const report = buildSessionPerformanceReport(ready);
+    expect(report.overallLatestPercentage).toBe(15);
+    expect(report.areasToReview.length).toBe(2);
+  });
+
   it("builds a completed session report only when report-ready", () => {
     const ready = session([
       row({ activity_key: "a", activity_title: "Password security", latest_percentage: 90, latest_score: 9 }),

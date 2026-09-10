@@ -94,4 +94,45 @@ describe("groupActivitiesBySession", () => {
     expect(sessions).toHaveLength(1);
     expect(unscoped.map((item) => item.activity_key)).toEqual(["missing"]);
   });
+
+  it("keeps 39/40-style sessions locked until every row is complete", () => {
+    const almost = Array.from({ length: 39 }, (_, index) =>
+      row({
+        activity_key: `s1-${index}`,
+        week_number: 1,
+        session_number: 1,
+        completed: index < 38,
+        attempt_count: index < 38 ? 1 : 0
+      })
+    );
+    const incomplete = groupActivitiesBySession(almost, "unit-3-cyber-security").sessions[0];
+    expect(incomplete.requiredCount).toBe(39);
+    expect(incomplete.completedCount).toBe(38);
+    expect(incomplete.reportReady).toBe(false);
+
+    const completeRows = almost.map((item) => ({ ...item, completed: true, attempt_count: 1 }));
+    const complete = groupActivitiesBySession(completeRows, "unit-3-cyber-security").sessions[0];
+    expect(complete.requiredCount).toBe(39);
+    expect(complete.reportReady).toBe(true);
+  });
+
+  it("keeps session isolation across week and hub boundaries", () => {
+    const rows = [
+      row({ activity_key: "a", week_number: 1, session_number: 1, completed: true }),
+      row({ activity_key: "b", week_number: 1, session_number: 2, completed: false }),
+      row({ activity_key: "c", week_number: 2, session_number: 1, completed: true }),
+      row({
+        activity_key: "d",
+        hub_code: "other-hub",
+        week_number: 1,
+        session_number: 1,
+        completed: true
+      })
+    ];
+    const { sessions } = groupActivitiesBySession(rows, "unit-3-cyber-security");
+    const s1 = findSession(sessions, 1, 1)!;
+    expect(s1.requiredCount).toBe(1);
+    expect(s1.reportReady).toBe(true);
+    expect(findSession(sessions, 1, 2)?.reportReady).toBe(false);
+  });
 });

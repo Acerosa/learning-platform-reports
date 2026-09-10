@@ -18,16 +18,29 @@ function readScopeFromLocation(): ReportScope {
   return parseReportScope(window.location.search, { hub: APP_CONFIG.pilotHubCode });
 }
 
+function scopeErrorMessage(error: unknown): string {
+  if (error instanceof Error && error.message === "LEARNER_IDENTITY_URL_FORBIDDEN") {
+    return "This link is not valid because it includes learner identity details.";
+  }
+  return "This report link is not valid.";
+}
+
+function initialScopeState(): { scope: ReportScope; scopeError: string | null } {
+  try {
+    return { scope: readScopeFromLocation(), scopeError: null };
+  } catch (error) {
+    return {
+      scope: { hub: APP_CONFIG.pilotHubCode, week: null, session: null },
+      scopeError: scopeErrorMessage(error)
+    };
+  }
+}
+
 export function App() {
   const { status, client, signOut, error: authError } = useAuth();
-  const [scope, setScope] = useState<ReportScope>(() => {
-    try {
-      return readScopeFromLocation();
-    } catch {
-      return { hub: APP_CONFIG.pilotHubCode, week: null, session: null };
-    }
-  });
-  const [scopeError, setScopeError] = useState<string | null>(null);
+  const initial = initialScopeState();
+  const [scope, setScope] = useState<ReportScope>(initial.scope);
+  const [scopeError, setScopeError] = useState<string | null>(initial.scopeError);
   const [rows, setRows] = useState<HubActivityProgressRow[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loadingRows, setLoadingRows] = useState(false);
@@ -46,11 +59,7 @@ export function App() {
         setScopeError(null);
         setScope(readScopeFromLocation());
       } catch (error) {
-        setScopeError(
-          error instanceof Error && error.message === "LEARNER_IDENTITY_URL_FORBIDDEN"
-            ? "This link is not valid because it includes learner identity details."
-            : "This report link is not valid."
-        );
+        setScopeError(scopeErrorMessage(error));
       }
     }
     window.addEventListener("popstate", onPopState);
@@ -76,6 +85,8 @@ export function App() {
         if (!active) return;
         if (error?.code === "AUTH_REQUIRED") {
           setLoadError("Your session has expired. Please sign in again.");
+        } else if (error?.code === "HUB_UNAVAILABLE") {
+          setLoadError("That course hub is not available for reports.");
         } else {
           setLoadError("We could not load your reports right now. Try again shortly.");
         }
